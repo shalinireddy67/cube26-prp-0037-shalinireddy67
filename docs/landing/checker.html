@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prep Manager — Package Compliance Checker</title>
+<meta name="description" content="Run automated Amazon FBA package prep checks on your product photos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Caveat:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F4F1EA; --surface:#EAE5D8; --ink:#2A2418; --ink-soft:#4C4636;
+    --navy:#1B2A4A; --navy-deep:#142038; --yellow:#EFB92E; --yellow-ink:#5A4108;
+    --pass:#2E6930; --pass-bg:#E2F0D9;
+    --fail:#A82824; --fail-bg:#FADBD8;
+    --uncertain:#9E6B00; --uncertain-bg:#FCF3CF;
+    --pending:#1B4F72; --pending-bg:#D4E6F1;
+    --line:rgba(42,36,24,.16);
+    --bg:var(--cream); --surface2:var(--surface); --text:var(--ink); --text-soft:var(--ink-soft);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#201A12; --surface2:#2B2318; --text:#F4EEDE; --text-soft:#C9BEA0;
+      --navy:#8CA6E0; --navy-deep:#111A2C; --yellow:#F0C24A; --yellow-ink:#241B02; --line:rgba(244,238,222,.16);
+      --pass:#6DB370; --pass-bg:#1C3020;
+      --fail:#E57373; --fail-bg:#3A1B1B;
+      --uncertain:#F4D03F; --uncertain-bg:#3A3215;
+      --pending:#85C1E9; --pending-bg:#162A38;
+    }
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Work Sans',-apple-system,BlinkMacSystemFont,sans-serif; line-height:1.55;}
+  h1,h2,h3,h4{font-family:'Fraunces',Georgia,serif; color:var(--navy); margin:0 0 .4em; font-weight:700;}
+  a{color:inherit; text-decoration:none;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px;}
+  
+  /* header */
+  .site-header{padding:20px 0; border-bottom:1px solid var(--line);}
+  .site-header .wrap{display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .wordmark{font-family:'Fraunces',serif; font-weight:700; font-size:1.4rem; color:var(--navy);}
+  .btn{font-family:'Work Sans',sans-serif; font-weight:600; font-size:.95rem; border:none; border-radius:6px; padding:11px 20px; min-height:42px; cursor:pointer; display:inline-flex; align-items:center; gap:8px;}
+  .btn-primary{background:var(--navy); color:var(--cream);}
+  .btn-primary:hover{background:var(--navy-deep);}
+  .btn-yellow{background:var(--yellow); color:var(--yellow-ink);}
+  .btn-yellow:hover{filter:brightness(1.06);}
+  .btn-outline{background:transparent; border:1px solid var(--line); color:var(--text);}
+  .btn-outline:hover{background:var(--surface2);}
+
+  .main-content{padding:40px 0 80px;}
+  .page-title{margin-bottom:30px;}
+  .tag{font-family:'Caveat',cursive; font-size:1.25rem; color:var(--yellow-ink); background:var(--yellow); display:inline-block; padding:.1em .5em; border-radius:3px; transform:rotate(-2deg); font-weight:600; margin-bottom:10px;}
+
+  /* grid layout */
+  .checker-grid{display:grid; grid-template-columns:1fr 1.25fr; gap:32px; align-items:start;}
+  @media (max-width:880px){ .checker-grid{grid-template-columns:1fr;} }
+
+  /* card */
+  .card{background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:28px;}
+  .card h2{font-size:1.4rem; margin-bottom:16px;}
+  .form-group{margin-bottom:20px;}
+  .form-group label{display:block; font-weight:600; font-size:.92rem; margin-bottom:6px;}
+  .form-group input[type="text"], .form-group select{width:100%; min-height:42px; padding:8px 12px; border-radius:6px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-family:inherit; font-size:1rem;}
+  .form-help{font-size:.82rem; color:var(--text-soft); margin-top:4px;}
+
+  .checkbox-group{display:flex; flex-direction:column; gap:10px; margin-top:8px;}
+  .checkbox-label{display:flex; align-items:center; gap:10px; font-weight:500; cursor:pointer;}
+  .checkbox-label input[type="checkbox"]{width:18px; height:18px; accent-color:var(--navy);}
+
+  /* photo preview */
+  .photo-box{border:2px dashed var(--line); border-radius:8px; padding:16px; text-align:center; background:var(--bg); margin-top:10px;}
+  .photo-preview{max-height:220px; width:auto; border-radius:6px; margin-top:10px; display:block; margin-left:auto; margin-right:auto; object-fit:contain;}
+  .photo-actions{display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap;}
+
+  /* result styles */
+  .status-banner{padding:16px 20px; border-radius:8px; display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; font-weight:700;}
+  .status-PASS{background:var(--pass-bg); color:var(--pass); border:1px solid var(--pass);}
+  .status-FAIL{background:var(--fail-bg); color:var(--fail); border:1px solid var(--fail);}
+  .status-UNCERTAIN{background:var(--uncertain-bg); color:var(--uncertain); border:1px solid var(--uncertain);}
+  .status-PENDING{background:var(--pending-bg); color:var(--pending); border:1px solid var(--pending);}
+
+  .review-badge{display:inline-flex; align-items:center; gap:6px; background:#FDEBD0; color:#B9770E; padding:6px 12px; border-radius:4px; font-size:.88rem; font-weight:600; margin-bottom:16px; border:1px solid #F8C471;}
+
+  /* checks list */
+  .checks-list{display:flex; flex-direction:column; gap:14px;}
+  .check-item{background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:16px;}
+  .check-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .check-name{font-weight:700; font-size:1.02rem;}
+  .verdict-tag{padding:3px 10px; border-radius:4px; font-size:.82rem; font-weight:700;}
+  .verdict-PASS{background:var(--pass-bg); color:var(--pass);}
+  .verdict-FAIL{background:var(--fail-bg); color:var(--fail);}
+  .verdict-UNCERTAIN{background:var(--uncertain-bg); color:var(--uncertain);}
+  .verdict-PENDING{background:var(--pending-bg); color:var(--pending);}
+  .check-exp{font-size:.9rem; color:var(--text); margin:4px 0;}
+  .check-evi{font-size:.82rem; color:var(--text-soft); font-style:italic;}
+
+  .spinner{display:inline-block; width:18px; height:18px; border:2px solid rgba(255,255,255,.3); border-radius:50%; border-top-color:#fff; animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .empty-state{text-align:center; padding:48px 20px; color:var(--text-soft);}
+  .empty-icon{font-size:3rem; margin-bottom:12px; display:block;}
+  .raw-json{margin-top:20px;}
+  .raw-json summary{cursor:pointer; font-weight:600; font-size:.9rem; color:var(--navy);}
+  .raw-json pre{background:var(--bg); padding:12px; border-radius:6px; overflow-x:auto; font-size:.82rem; border:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="wordmark" href="index.html#top">&larr; Prep Manager</a>
+    <a class="btn btn-outline" href="index.html">View Landing Page</a>
+  </div>
+</header>
+
+<main class="main-content">
+  <div class="wrap">
+    <div class="page-title">
+      <span class="tag">Live Package Checker</span>
+      <h1>Check My Prep</h1>
+      <p style="color:var(--text-soft); max-width:60ch; margin:0;">
+        Run the end-to-end Prep Manager inspection pipeline on your prepped package photo.
+        Connects directly to the vision observation, schema validation, and Amazon compliance rules.
+      </p>
+    </div>
+
+    <div class="checker-grid">
+      <!-- Input Configuration Form -->
+      <div class="card">
+        <h2>1. Package &amp; Work Order</h2>
+        <form id="checkerForm">
+          <div class="form-group">
+            <label for="unitId">Unit Identifier</label>
+            <input type="text" id="unitId" value="DEMO-UNIT-001" required>
+            <div class="form-help">Unique tracking ID for this unit in the warehouse chain.</div>
+          </div>
+
+          <div class="form-group">
+            <label>Work Order Applicable Requirements</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="woPolybag" checked>
+                <span>Polybag required &amp; sealed (wo_polybag)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="woSuffocation" checked>
+                <span>Suffocation warning required (wo_suffocation_warning)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="woExpiry">
+                <span>Expiry date label required (wo_expiry_date)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="woHandling">Handling Marks Requirement</label>
+            <select id="woHandling">
+              <option value="fragile" selected>Fragile (fragile)</option>
+              <option value="fragile;this_way_up">Fragile + This Way Up</option>
+              <option value="liquid;this_way_up">Liquid + This Way Up</option>
+              <option value="">None / Not Required</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Package Photo</label>
+            <div class="photo-box">
+              <img id="imgPreview" class="photo-preview" src="../../fixtures/prep/test.jpg" alt="Prep Photo">
+              <div id="photoStatus" style="font-size:.85rem; color:var(--text-soft); margin-top:8px;">
+                Using standard demo fixture: <code>fixtures/prep/test.jpg</code>
+              </div>
+              <div class="photo-actions">
+                <button type="button" class="btn btn-outline" id="btnUseDemo">Use Demo Fixture</button>
+                <label class="btn btn-outline" style="cursor:pointer;">
+                  Upload Photo
+                  <input type="file" id="fileInput" accept="image/*" style="display:none;">
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btnRunCheck" style="width:100%; justify-content:center; margin-top:10px; font-size:1.05rem;">
+            <span>Run Prep Check</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Results Display Section -->
+      <div class="card" id="resultsSection">
+        <h2>2. Compliance Report</h2>
+        
+        <div id="emptyResults" class="empty-state">
+          <span class="empty-icon">&#128230;</span>
+          <p>Ready to inspect. Click <strong>"Run Prep Check"</strong> to process the photo through the vision agent and compliance rules.</p>
+        </div>
+
+        <div id="loadingState" style="display:none; text-align:center; padding:48px 20px;">
+          <div class="spinner" style="width:36px; height:36px; border-width:3px; border-top-color:var(--navy);"></div>
+          <p style="margin-top:16px; font-weight:600; color:var(--navy);">Analyzing package prep with vision agent...</p>
+          <p style="font-size:.88rem; color:var(--text-soft);">Checking barcode visibility, suffocation warning, seals, and handling marks.</p>
+        </div>
+
+        <div id="reportContent" style="display:none;">
+          <div id="statusBanner" class="status-banner">
+            <div>
+              <span style="font-size:.9rem; text-transform:uppercase; letter-spacing:.05em; display:block; opacity:.8;">Overall Result</span>
+              <span id="overallStatusText" style="font-size:1.5rem; font-family:'Fraunces',serif;">PASS</span>
+            </div>
+            <div id="unitIdDisplay" style="font-family:monospace; font-size:.95rem;"></div>
+          </div>
+
+          <div id="manualReviewNotice" class="review-badge" style="display:none;">
+            <span>&#9888; Requires Manual Review: One or more advisory checks flagged for human inspection.</span>
+          </div>
+
+          <div class="checks-list" id="checksList">
+            <!-- Populated dynamically -->
+          </div>
+
+          <details class="raw-json">
+            <summary>View Structured JSON (PrepResult)</summary>
+            <pre><code id="jsonCode"></code></pre>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  var currentImageBase64 = null;
+  var currentImagePath = "fixtures/prep/test.jpg";
+  var imgPreview = document.getElementById("imgPreview");
+  var photoStatus = document.getElementById("photoStatus");
+  var fileInput = document.getElementById("fileInput");
+  var btnUseDemo = document.getElementById("btnUseDemo");
+  var checkerForm = document.getElementById("checkerForm");
+  var btnRunCheck = document.getElementById("btnRunCheck");
+
+  var emptyResults = document.getElementById("emptyResults");
+  var loadingState = document.getElementById("loadingState");
+  var reportContent = document.getElementById("reportContent");
+  var statusBanner = document.getElementById("statusBanner");
+  var overallStatusText = document.getElementById("overallStatusText");
+  var unitIdDisplay = document.getElementById("unitIdDisplay");
+  var manualReviewNotice = document.getElementById("manualReviewNotice");
+  var checksList = document.getElementById("checksList");
+  var jsonCode = document.getElementById("jsonCode");
+
+  // Switch to demo fixture
+  btnUseDemo.addEventListener("click", function(){
+    currentImageBase64 = null;
+    currentImagePath = "fixtures/prep/test.jpg";
+    imgPreview.src = "../../fixtures/prep/test.jpg";
+    photoStatus.innerHTML = "Using standard demo fixture: <code>fixtures/prep/test.jpg</code>";
+    fileInput.value = "";
+  });
+
+  // Handle local file upload
+  fileInput.addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      currentImageBase64 = evt.target.result;
+      currentImagePath = null;
+      imgPreview.src = evt.target.result;
+      photoStatus.innerHTML = "Custom uploaded photo: <strong>" + file.name + "</strong>";
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Check form submission
+  checkerForm.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    var unitId = document.getElementById("unitId").value.trim() || "DEMO-UNIT-001";
+    var workOrder = {
+      "wo_polybag": document.getElementById("woPolybag").checked ? "True" : "False",
+      "wo_suffocation_warning": document.getElementById("woSuffocation").checked ? "True" : "False",
+      "wo_expiry_date": document.getElementById("woExpiry").checked ? "True" : "False",
+      "wo_handling_marks": document.getElementById("woHandling").value,
+    };
+
+    var payload = {
+      unit_id: unitId,
+      work_order: workOrder,
+      image_path: currentImagePath,
+      image_base64: currentImageBase64,
+    };
+
+    emptyResults.style.display = "none";
+    reportContent.style.display = "none";
+    loadingState.style.display = "block";
+    btnRunCheck.disabled = true;
+
+    // Send to backend API running process_unit
+    fetch("/api/check", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    })
+    .then(function(res){
+      if(!res.ok){
+        throw new Error("HTTP " + res.status + ": Server returned an error.");
+      }
+      return res.json();
+    })
+    .then(function(data){
+      renderReport(data);
+    })
+    .catch(function(err){
+      // Fallback display if backend server not running
+      loadingState.style.display = "none";
+      emptyResults.style.display = "block";
+      btnRunCheck.disabled = false;
+      alert("Could not connect to /api/check backend.\n\nMake sure the Prep Manager server is running:\n  python server.py\n\nError: " + err.message);
+    });
+  });
+
+  function renderReport(data){
+    loadingState.style.display = "none";
+    reportContent.style.display = "block";
+    btnRunCheck.disabled = false;
+
+    var status = data.overall_status || "PENDING";
+    overallStatusText.textContent = status;
+    statusBanner.className = "status-banner status-" + status;
+    unitIdDisplay.textContent = "Unit: " + (data.unit_id || "N/A");
+
+    if(data.requires_manual_review){
+      manualReviewNotice.style.display = "inline-flex";
+    } else {
+      manualReviewNotice.style.display = "none";
+    }
+
+    checksList.innerHTML = "";
+    var checks = data.checks || [];
+
+    if(checks.length === 0){
+      var emptyMsg = document.createElement("p");
+      emptyMsg.style.color = "var(--text-soft)";
+      emptyMsg.textContent = data.evidence && data.evidence.reason ? data.evidence.reason : "No checks evaluated (status pending).";
+      checksList.appendChild(emptyMsg);
+    } else {
+      checks.forEach(function(c){
+        var item = document.createElement("div");
+        item.className = "check-item";
+
+        var head = document.createElement("div");
+        head.className = "check-head";
+
+        var nameSpan = document.createElement("span");
+        nameSpan.className = "check-name";
+        nameSpan.textContent = formatCheckName(c.name);
+
+        var vTag = document.createElement("span");
+        vTag.className = "verdict-tag verdict-" + c.verdict;
+        vTag.textContent = c.verdict;
+
+        head.appendChild(nameSpan);
+        head.appendChild(vTag);
+        item.appendChild(head);
+
+        if(c.explanation){
+          var pExp = document.createElement("p");
+          pExp.className = "check-exp";
+          pExp.textContent = c.explanation;
+          item.appendChild(pExp);
+        }
+
+        if(c.evidence && c.evidence.length > 0){
+          var pEvi = document.createElement("p");
+          pEvi.className = "check-evi";
+          pEvi.textContent = "Observed Evidence: " + c.evidence.join("; ");
+          item.appendChild(pEvi);
+        }
+
+        checksList.appendChild(item);
+      });
+    }
+
+    jsonCode.textContent = JSON.stringify(data, null, 2);
+  }
+
+  function formatCheckName(key){
+    var names = {
+      "polybag_present_sealed": "1. Polybag Present & Sealed",
+      "suffocation_warning": "2. Suffocation Warning Legibility",
+      "fnsku_label_placement": "3. FNSKU Label Placement (Advisory)",
+      "original_barcode_covered": "4. Original Barcode Covered (Advisory)",
+      "expiry_date": "5. Expiration Date Marking",
+      "handling_marks": "6. Required Handling Marks"
+    };
+    return names[key] || key;
+  }
+})();
+</script>
+
+</body>
+</html>

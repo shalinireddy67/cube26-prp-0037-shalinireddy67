@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+<title>Prep Manager — FBA package prep checks before Amazon rejects them</title>
+<meta name="description" content="Upload a photo of your Amazon FBA prep. Prep Manager checks barcode visibility, packing quality, and shipment readiness, then gives you a pass or fail report with exactly what to fix.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://prepmanager.app/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Prep Manager — catch prep mistakes before Amazon does">
+<meta property="og:description" content="Photo-based prep checks for Amazon FBA sellers: barcode visibility, packing quality, and shipment readiness in seconds.">
+<meta property="og:url" content="https://prepmanager.app/">
+<meta property="og:image" content="https://prepmanager.app/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Prep Manager — catch prep mistakes before Amazon does">
+<meta name="twitter:description" content="Photo-based prep checks for Amazon FBA sellers: barcode visibility, packing quality, and shipment readiness in seconds.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Caveat:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  Analytics: add your privacy-friendly analytics snippet here (e.g. Plausible
+  or GA4) once this is hosted on your own domain. Left out of this preview
+  because third-party scripts from non-whitelisted hosts are blocked here.
+  Social image: og:image above points at a placeholder path — export a
+  1200x630 PNG of the hero art and host it at that URL before sharing links.
+-->
+<style>
+  :root{
+    --cream:#F4F1EA; --surface:#EAE5D8; --ink:#2A2418; --ink-soft:#4C4636;
+    --navy:#1B2A4A; --navy-deep:#142038; --yellow:#EFB92E; --yellow-ink:#5A4108;
+    --pass:#4F7A52; --line:rgba(42,36,24,.16);
+    --bg:var(--cream); --surface2:var(--surface); --text:var(--ink); --text-soft:var(--ink-soft);
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#201A12; --surface2:#2B2318; --text:#F4EEDE; --text-soft:#C9BEA0;
+      --navy:#8CA6E0; --navy-deep:#111A2C; --yellow:#F0C24A; --yellow-ink:#241B02; --line:rgba(244,238,222,.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#201A12; --surface2:#2B2318; --text:#F4EEDE; --text-soft:#C9BEA0;
+    --navy:#8CA6E0; --navy-deep:#111A2C; --yellow:#F0C24A; --yellow-ink:#241B02; --line:rgba(244,238,222,.16);
+  }
+  html{scroll-behavior:smooth; scroll-padding-top:env(safe-area-inset-top,0px);}
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:'Work Sans',-apple-system,BlinkMacSystemFont,sans-serif; line-height:1.55;}
+  img,svg{max-width:100%;}
+  h1,h2,h3{font-family:'Fraunces',Georgia,serif; color:var(--navy); margin:0 0 .4em; line-height:1.08; font-weight:700;}
+  a{color:inherit;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px;}
+  .tag{font-family:'Caveat',cursive; font-size:1.35rem; color:var(--yellow-ink); background:var(--yellow); display:inline-block; padding:.15em .6em; border-radius:3px; transform:rotate(-2.5deg); font-weight:600;}
+  :root[data-theme="dark"] .tag, @media (prefers-color-scheme:dark){ .tag{color:var(--yellow-ink);} }
+
+  /* header */
+  .site-header{padding:22px 0;}
+  .site-header .wrap{display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .wordmark{font-family:'Fraunces',serif; font-weight:700; font-size:1.4rem; color:var(--navy); text-decoration:none;}
+  .btn{font-family:'Work Sans',sans-serif; font-weight:600; font-size:.98rem; border:none; border-radius:6px; padding:13px 22px; min-height:44px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; text-decoration:none;}
+  .btn-primary{background:var(--navy); color:var(--cream);}
+  .btn-primary:hover{background:var(--navy-deep);}
+  .btn-yellow{background:var(--yellow); color:var(--yellow-ink);}
+  .btn-yellow:hover{filter:brightness(1.06);}
+
+  /* hero */
+  .hero{padding:36px 0 0;}
+  .hero .wrap{display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center;}
+  .hero-copy .tag{margin-bottom:16px;}
+  .hero h1{font-size:clamp(2.6rem,4vw + 1rem,4rem);}
+  .hero p.lede{font-size:1.15rem; color:var(--text-soft); max-width:46ch; margin:0 0 28px;}
+  .hero-actions{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .hero-actions .note{font-size:.9rem; color:var(--text-soft);}
+  .illustration{width:100%; height:auto; overflow:visible;}
+  .truck{animation:drive 1.6s cubic-bezier(.22,.75,.3,1) forwards;}
+  .wheel{transform-origin:center; animation:spin 1.6s cubic-bezier(.22,.75,.3,1) forwards;}
+  .door{transform-origin:248px 295px; animation:dooropen .5s ease-out forwards; animation-delay:1.55s;}
+  .pkg-drop{opacity:0; transform:translate(55px,-55px) rotate(-25deg) scale(.55); transform-origin:center; animation:pkgdrop .6s cubic-bezier(.32,1.5,.6,1) forwards;}
+  .pkg-1 .pkg-drop{animation-delay:1.8s;}
+  .pkg-2 .pkg-drop{animation-delay:2s;}
+  .pkg-3 .pkg-drop{animation-delay:2.2s;}
+  @keyframes drive{from{transform:translateX(-380px);} to{transform:translateX(0);}}
+  @keyframes spin{from{transform:rotate(0);} to{transform:rotate(720deg);}}
+  @keyframes dooropen{to{transform:rotate(-70deg);}}
+  @keyframes pkgdrop{0%{opacity:0; transform:translate(55px,-55px) rotate(-25deg) scale(.55);} 55%{opacity:1; transform:translate(-3px,6px) rotate(8deg) scale(1.08);} 100%{opacity:1; transform:translate(0,0) rotate(-4deg) scale(1);}}
+  @media (prefers-reduced-motion:reduce){
+    .truck,.wheel{animation:none; transform:none;}
+    .door{animation:none; transform:rotate(-70deg);}
+    .pkg-drop{animation:none; opacity:1; transform:none;}
+  }
+
+  section{padding:76px 0;}
+  .section-head{max-width:56ch; margin-bottom:44px;}
+  .section-head h2{font-size:clamp(1.9rem,2.4vw + 1rem,2.5rem);}
+  .section-head p{color:var(--text-soft); font-size:1.05rem; margin:0;}
+
+  /* how it works — road/path layout */
+  .how{background:var(--surface2);}
+  .path{position:relative;}
+  .path::before{content:"";position:absolute; left:24px; top:24px; bottom:24px; width:3px; background-repeat:repeat-y; background-image:linear-gradient(var(--ink) 60%, transparent 0%); background-size:3px 16px;}
+  .steps{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:40px;}
+  .step{display:grid; grid-template-columns:48px 1fr; gap:20px; position:relative;}
+  .step-num{width:48px; height:48px; border-radius:50%; background:var(--navy); color:var(--cream); display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif; font-weight:700; font-size:1.2rem; position:relative; z-index:1;}
+  .step h3{font-size:1.25rem; margin-bottom:6px;}
+  .step p{margin:0; color:var(--text-soft);}
+  @media (min-width:760px){
+    .path::before{left:50%; margin-left:-1.5px;}
+    .steps{gap:8px;}
+    .step{grid-template-columns:1fr 48px 1fr; align-items:center; gap:28px;}
+    .step:nth-child(odd) .step-copy{grid-column:1; text-align:right;}
+    .step:nth-child(odd) .step-num{grid-column:2;}
+    .step:nth-child(odd) .step-spacer{grid-column:3;}
+    .step:nth-child(even) .step-copy{grid-column:3;}
+    .step:nth-child(even) .step-num{grid-column:2;}
+    .step:nth-child(even) .step-spacer{grid-column:1;}
+  }
+
+  /* features — asymmetric, not 3 equal boxes */
+  .features .wrap > .grid{display:grid; grid-template-columns:1.3fr 1fr; gap:24px;}
+  .feature-card{background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:32px;}
+  .feature-card.lg{display:flex; flex-direction:column; justify-content:center;}
+  .feature-stack{display:flex; flex-direction:column; gap:24px;}
+  .feature-card h3{font-size:1.3rem; display:flex; align-items:center; gap:10px;}
+  .feature-card p{color:var(--text-soft); margin:0;}
+  .fi{flex:none;}
+  @media (max-width:820px){ .features .wrap > .grid{grid-template-columns:1fr;} }
+
+  /* cta band */
+  .cta-band{background:var(--navy-deep); color:var(--cream);}
+  .cta-band h2{color:var(--cream);}
+  .cta-band .wrap{display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center;}
+  .cta-band p{color:#D9D2BE; max-width:42ch;}
+  form.signup{display:flex; gap:10px; flex-wrap:wrap;}
+  form.signup .field{flex:1 1 220px; min-width:0;}
+  form.signup label{display:block; font-size:.88rem; margin-bottom:6px; color:#D9D2BE;}
+  form.signup input[type=email]{width:100%; min-height:44px; padding:0 14px; border-radius:6px; border:1px solid rgba(244,238,222,.3); background:rgba(244,238,222,.06); color:var(--cream); font-family:inherit; font-size:1rem;}
+  form.signup input[type=email]::placeholder{color:#B9B29B;}
+  form.signup .err{color:var(--yellow); font-size:.85rem; min-height:1.2em; margin-top:6px;}
+  .hp{position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;}
+  .form-msg{margin-top:14px; font-size:.95rem; color:var(--yellow);}
+
+  /* footer */
+  .site-footer{border-top:1px solid var(--line); padding:44px 0 90px;}
+  .site-footer .wrap{display:flex; flex-wrap:wrap; justify-content:space-between; gap:24px;}
+  .site-footer nav{display:flex; gap:22px; flex-wrap:wrap; font-size:.95rem;}
+  .site-footer a{text-decoration:none; color:var(--text-soft);}
+  .site-footer a:hover{color:var(--text);}
+  .legal{max-width:640px; margin-top:26px; color:var(--text-soft); font-size:.92rem;}
+  .legal summary{cursor:pointer; color:var(--navy); font-weight:600; padding:6px 0;}
+  .legal p{margin:.6em 0;}
+  .fine{font-size:.85rem; color:var(--text-soft); margin-top:20px;}
+
+  /* cookie banner */
+  .cookie-banner{position:fixed; left:16px; right:16px; bottom:16px; padding-bottom:env(safe-area-inset-bottom,0px); max-width:640px; margin:0 auto; background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:18px 20px; box-shadow:0 4px 18px rgba(0,0,0,.14); display:none; z-index:50;}
+  .cookie-banner.show{display:flex; gap:16px; flex-wrap:wrap; align-items:center;}
+  .cookie-banner p{margin:0; font-size:.92rem; color:var(--text-soft); flex:1 1 240px;}
+  .cookie-actions{display:flex; gap:10px;}
+  .cookie-actions button{min-height:40px; padding:0 16px; border-radius:6px; border:1px solid var(--line); background:var(--cream); font-family:inherit; font-weight:600; cursor:pointer;}
+  .cookie-actions .accept{background:var(--navy); color:var(--cream); border-color:var(--navy);}
+
+  @media (max-width:860px){
+    .hero .wrap{grid-template-columns:1fr;}
+    .hero-copy{order:1;} .hero-illustration{order:2;}
+    .cta-band .wrap{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="wordmark" href="#top">Prep Manager</a>
+    <a class="btn btn-primary" href="checker.html">Check my prep</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="tag">for Amazon FBA sellers</span>
+        <h1>Prep Manager</h1>
+        <p class="lede">Catch prep mistakes before Amazon does. Upload a photo of your packed box and get a pass or fail report on barcode visibility, packing quality, and shipment readiness.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="checker.html">Check my prep</a>
+          <span class="note">No credit card. First check is free.</span>
+        </div>
+      </div>
+      <div class="hero-illustration">
+        <svg class="illustration" viewBox="0 0 640 420" role="img" aria-label="A delivery truck pulls up on a road, its rear door swings open, and three packages tumble out ready for shipment." xmlns="http://www.w3.org/2000/svg">
+          <g fill="var(--surface)" opacity=".85">
+            <ellipse cx="70" cy="52" rx="30" ry="16"/>
+            <ellipse cx="96" cy="46" rx="22" ry="13"/>
+            <ellipse cx="46" cy="48" rx="18" ry="11"/>
+          </g>
+          <g fill="var(--surface)" opacity=".55">
+            <ellipse cx="440" cy="38" rx="24" ry="12"/>
+            <ellipse cx="462" cy="44" rx="16" ry="9"/>
+          </g>
+          <g fill="var(--surface)" opacity=".9">
+            <path d="M300 210 L300 176 L325 152 L350 176 L350 210 Z"/>
+            <path d="M362 210 L362 158 L385 136 L408 158 L408 210 Z"/>
+            <path d="M420 210 L420 186 L447 186 L447 210 Z"/>
+            <path d="M486 210 L486 172 L510 150 L534 172 L534 210 Z"/>
+            <path d="M546 210 L546 192 L606 192 L606 210 Z"/>
+          </g>
+          <line x1="92" y1="238" x2="92" y2="300" stroke="var(--ink)" stroke-width="3.5" stroke-linecap="round"/>
+          <circle cx="92" cy="212" r="28" fill="var(--surface)" stroke="var(--ink)" stroke-width="3.5"/>
+          <circle cx="82" cy="220" r="3.5" fill="var(--yellow)"/>
+          <g fill="none" stroke="var(--ink)" stroke-linecap="round">
+            <path d="M0 324 Q160 314 320 324 T640 320" stroke-width="2" opacity=".45"/>
+            <path d="M0 350 Q160 340 320 350 T640 346" stroke-width="3" opacity=".65"/>
+            <path d="M20 372 Q160 366 320 372 T620 370" stroke-dasharray="16 14" stroke-width="3" opacity=".8"/>
+            <path d="M0 392 Q160 384 320 392 T640 388" stroke-width="3.5" opacity=".9"/>
+            <path d="M0 412 Q160 404 320 412 T640 408" stroke-width="4"/>
+          </g>
+          <g class="truck">
+            <g fill="none" stroke="var(--ink)" stroke-width="4" stroke-linejoin="round">
+              <rect x="248" y="250" width="122" height="90" rx="6" fill="var(--cream)"/>
+              <rect x="248" y="274" width="122" height="18" fill="var(--yellow)" stroke="none"/>
+              <path d="M375 255 L400 248 L400 262 Z" fill="var(--navy)" stroke="var(--ink)" stroke-width="2"/>
+              <line x1="375" y1="260" x2="375" y2="255" stroke-linecap="round"/>
+              <rect x="370" y="278" width="58" height="62" rx="4" fill="var(--cream)"/>
+              <path d="M428 288 L448 288 L461 308 L461 340 L428 340 Z" fill="var(--surface)"/>
+              <line x1="435" y1="308" x2="454" y2="308"/>
+            </g>
+            <rect x="250" y="252" width="14" height="86" fill="var(--ink)" opacity=".18"/>
+            <rect class="door" x="248" y="250" width="26" height="90" rx="3" fill="var(--cream)" stroke="var(--ink)" stroke-width="4" stroke-linejoin="round"/>
+            <g class="wheel">
+              <circle cx="288" cy="342" r="20" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
+              <circle cx="288" cy="342" r="6" fill="var(--ink)"/>
+            </g>
+            <g class="wheel">
+              <circle cx="430" cy="342" r="20" fill="var(--cream)" stroke="var(--ink)" stroke-width="4"/>
+              <circle cx="430" cy="342" r="6" fill="var(--ink)"/>
+            </g>
+          </g>
+          <g class="pkg-spot pkg-1" transform="translate(150,352)">
+            <g class="pkg-drop" fill="none" stroke="var(--ink)" stroke-width="3.5" stroke-linejoin="round">
+              <rect x="-17" y="-15" width="34" height="30" fill="var(--yellow)"/>
+              <line x1="0" y1="-15" x2="0" y2="15"/>
+              <path d="M-9 -15 C-9 -24 9 -24 9 -15" fill="none"/>
+            </g>
+          </g>
+          <g class="pkg-spot pkg-2" transform="translate(186,357)">
+            <g class="pkg-drop" fill="none" stroke="var(--ink)" stroke-width="3.5" stroke-linejoin="round">
+              <rect x="-15" y="-13" width="30" height="26" fill="var(--cream)"/>
+              <line x1="0" y1="-13" x2="0" y2="13"/>
+              <path d="M-8 -13 C-8 -21 8 -21 8 -13" fill="none"/>
+            </g>
+          </g>
+          <g class="pkg-spot pkg-3" transform="translate(216,351)">
+            <g class="pkg-drop" fill="none" stroke="var(--ink)" stroke-width="3.5" stroke-linejoin="round">
+              <rect x="-16" y="-14" width="32" height="28" fill="var(--yellow)"/>
+              <line x1="0" y1="-14" x2="0" y2="14"/>
+              <path d="M-8 -14 C-8 -22 8 -22 8 -14" fill="none"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="how-it-works">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>How it works</h2>
+        <p>Three steps between a packed box and knowing it's ready to ship.</p>
+      </div>
+      <div class="path">
+        <ol class="steps">
+          <li class="step">
+            <div class="step-num">1</div>
+            <div class="step-copy">
+              <h3>Upload a photo</h3>
+              <p>Snap or upload a photo of the package before it leaves your prep table.</p>
+            </div>
+            <div class="step-spacer" aria-hidden="true"></div>
+          </li>
+          <li class="step">
+            <div class="step-num">2</div>
+            <div class="step-copy">
+              <h3>Automated check</h3>
+              <p>Prep Manager reviews barcode visibility, packing quality, and Amazon's shipment-readiness rules.</p>
+            </div>
+            <div class="step-spacer" aria-hidden="true"></div>
+          </li>
+          <li class="step">
+            <div class="step-num">3</div>
+            <div class="step-copy">
+              <h3>Pass or fail report</h3>
+              <p>Get a clear result in seconds, with exactly what to fix if it fails.</p>
+            </div>
+            <div class="step-spacer" aria-hidden="true"></div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>What it checks</h2>
+        <p>Built around the three things that get FBA shipments rejected.</p>
+      </div>
+      <div class="grid">
+        <div class="feature-card lg">
+          <h3><svg class="fi" width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="var(--navy)" stroke-width="2.4" aria-hidden="true"><rect x="3" y="5" width="2" height="16"/><rect x="7" y="5" width="1" height="16"/><rect x="10" y="5" width="3" height="16"/><rect x="15" y="5" width="1" height="16"/><rect x="18" y="5" width="2" height="16"/><rect x="22" y="5" width="1" height="16"/></svg> Barcode visibility detection</h3>
+          <p>Confirms your FNSKU or UPC barcode is unobstructed, unfolded, and scannable before it reaches a fulfillment center. Tape, labels, or box seams over the code are flagged before you ship.</p>
+        </div>
+        <div class="feature-stack">
+          <div class="feature-card">
+            <h3><svg class="fi" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2.2" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12l3 3 6-7"/></svg> Packing quality check</h3>
+            <p>Flags loose tape, missing poly bags, crushed corners, and other prep issues that trigger Amazon rejections.</p>
+          </div>
+          <div class="feature-card">
+            <h3><svg class="fi" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2.2" aria-hidden="true"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 12h6M9 16h6"/></svg> Compliance report</h3>
+            <p>A downloadable report you can keep for your prep records or hand to your packing team.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band" id="get-started">
+    <div class="wrap">
+      <div>
+        <h2>Stop guessing if your prep will pass.</h2>
+        <p>Run your first check free. No credit card, no install, just a photo.</p>
+        <a class="btn btn-yellow" href="checker.html" style="margin-top:8px;">Check my prep now</a>
+      </div>
+      <div>
+        <form class="signup" id="signupForm" novalidate>
+          <div class="hp" aria-hidden="true">
+            <label for="company">Company</label>
+            <input type="text" id="company" name="company" tabindex="-1" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="email">Get prep tips and product updates</label>
+            <input type="email" id="email" name="email" placeholder="you@yourstore.com" required>
+            <div class="err" id="emailErr" aria-live="polite"></div>
+          </div>
+          <button class="btn btn-yellow" type="submit" style="align-self:flex-start; margin-top:26px;">Notify me</button>
+        </form>
+        <p class="form-msg" id="formMsg" hidden>You're on the list. We'll only email about prep tips and product updates.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <a class="wordmark" href="#top">Prep Manager</a>
+      <p class="fine">Built for Amazon FBA sellers. &copy; 2026 Prep Manager.</p>
+    </div>
+    <nav aria-label="Footer">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#privacy">Privacy policy</a>
+      <a href="#terms">Terms</a>
+    </nav>
+  </div>
+  <div class="wrap">
+    <details class="legal" id="privacy">
+      <summary>Privacy policy</summary>
+      <p>Prep Manager collects the photos you upload to run a prep check, plus your email if you sign up for updates. Photos are used only to generate your report and are not sold or shared with third parties.</p>
+      <p>We use a small amount of local storage to remember that you've seen the cookie notice below. We don't run third-party ad trackers.</p>
+      <p>You can ask us to delete your uploaded photos and account data at any time by contacting support.</p>
+    </details>
+    <details class="legal" id="terms">
+      <summary>Terms &amp; conditions</summary>
+      <p>Prep Manager gives you an automated read on packing quality, barcode visibility, and shipment readiness. It's a check, not a guarantee: Amazon makes the final call on any shipment.</p>
+      <p>Don't upload photos you don't have the right to share. Free checks are limited per account; paid plans remove that limit.</p>
+      <p>We may update these terms as the product changes. Continued use after an update means you accept the new terms.</p>
+    </details>
+  </div>
+</footer>
+
+<div class="cookie-banner" id="cookieBanner" role="dialog" aria-live="polite" aria-label="Cookie notice">
+  <p>We use a small amount of local storage to run this site and remember your preferences. No ad trackers.</p>
+  <div class="cookie-actions">
+    <button type="button" id="cookieDecline">Decline</button>
+    <button type="button" class="accept" id="cookieAccept">Accept</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  try{
+    var choice = localStorage.getItem('pm-cookie-choice');
+    var banner = document.getElementById('cookieBanner');
+    if(!choice && banner){ banner.classList.add('show'); }
+    function setChoice(v){
+      try{ localStorage.setItem('pm-cookie-choice', v); }catch(e){}
+      if(banner) banner.classList.remove('show');
+    }
+    var a = document.getElementById('cookieAccept');
+    var d = document.getElementById('cookieDecline');
+    if(a) a.addEventListener('click', function(){ setChoice('accepted'); });
+    if(d) d.addEventListener('click', function(){ setChoice('declined'); });
+  }catch(e){}
+})();
+
+(function(){
+  var form = document.getElementById('signupForm');
+  if(!form) return;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var hp = document.getElementById('company');
+    if(hp && hp.value.trim() !== ''){ return; } // honeypot tripped, drop silently
+    var email = document.getElementById('email');
+    var err = document.getElementById('emailErr');
+    var msg = document.getElementById('formMsg');
+    var pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!email.value || !pattern.test(email.value)){
+      err.textContent = 'Enter a valid email address.';
+      email.setAttribute('aria-invalid','true');
+      return;
+    }
+    err.textContent = '';
+    email.removeAttribute('aria-invalid');
+    form.hidden = true;
+    if(msg) msg.hidden = false;
+  });
+})();
+</script>
+
+</body>
+</html>
