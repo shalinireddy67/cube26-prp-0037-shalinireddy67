@@ -179,6 +179,40 @@ def _call_mock(image_bytes: bytes, media_type: str, prompt: str, model: str | No
     return json.dumps(mock_result)
 
 
+def _call_groq(image_bytes: bytes, media_type: str, prompt: str, model: str | None = None) -> str:
+    """Call Groq's vision model and return the raw text response."""
+    import base64
+    from groq import Groq
+
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key or not api_key.strip():
+        raise ValueError(
+            "GROQ_API_KEY is missing from environment. "
+            "Please fill in GROQ_API_KEY in your .env file."
+        )
+
+    selected_model = model or os.environ.get("GROQ_VISION_MODEL", "qwen/qwen3.6-27b")
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
+
+    client = Groq(api_key=api_key)
+    response = client.chat.completions.create(
+        model=selected_model,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{media_type};base64,{image_b64}"},
+                    },
+                ],
+            }
+        ],
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
 def analyze_unit_photo(image_path: str, model: str | None = None) -> dict[str, Any]:
     """
     Analyze a product prep photo using the configured vision provider.
@@ -224,6 +258,13 @@ def analyze_unit_photo(image_path: str, model: str | None = None) -> dict[str, A
             )
         elif provider == "anthropic":
             raw_response_text = _call_anthropic(
+                image_bytes=image_bytes,
+                media_type=media_type,
+                prompt=VISION_PROMPT,
+                model=model,
+            )
+        elif provider == "groq":
+            raw_response_text = _call_groq(
                 image_bytes=image_bytes,
                 media_type=media_type,
                 prompt=VISION_PROMPT,
