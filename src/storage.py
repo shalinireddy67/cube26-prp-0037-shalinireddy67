@@ -66,6 +66,22 @@ def init_db(db_path: Path | str = DB_PATH) -> None:
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_results_org_id ON results (org_id);
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS overrides (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                result_id INTEGER NOT NULL,
+                org_id TEXT NOT NULL,
+                original_verdict TEXT NOT NULL,
+                new_verdict TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                operator_id TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (result_id) REFERENCES results (id)
+            );
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_overrides_org_id ON overrides (org_id);
+        """)
         conn.commit()
 
 
@@ -237,3 +253,92 @@ def get_image_bytes(
     if path is not None:
         return path.read_bytes()
     return None
+
+
+def add_override(
+    org_id: str,
+    result_id: int,
+    original_verdict: str,
+    new_verdict: str,
+    reason: str,
+    operator_id: Optional[str] = None,
+    db_path: Path | str = DB_PATH,
+) -> int:
+    """
+    Adds an operator override record for a result.
+    Confirms that result_id belongs to org_id first via get_result_by_id.
+    Raises ValueError("Result not found for this organization") if result is not found.
+    Inserts a row into overrides with all fields plus created_at (UTC isoformat).
+    Returns the new override row id.
+    """
+    clean_org = _sanitize_id(org_id)
+    result = get_result_by_id(clean_org, result_id, db_path=db_path)
+    if result is None:
+        raise ValueError("Result not found for this organization")
+
+    init_db(db_path)
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    with sqlite3.connect(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO overrides (
+                result_id, org_id, original_verdict, new_verdict,
+                reason, operator_id, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                result_id,
+                clean_org,
+                original_verdict,
+                new_verdict,
+                reason,
+                operator_id,
+                created_at,
+            ),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_overrides_for_result(
+    org_id: str,
+    result_id: int,
+    db_path: Path | str = DB_PATH,
+) -> list[dict]:
+    """
+    Retrieves all overrides for a specific result_id belonging to org_id.
+    Returns list of dicts, empty list if none.
+    """
+    clean_org = _sanitize_id(org_id)
+    init_db(db_path)
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM overrides WHERE result_id = ? AND org_id = ?",
+            (result_id, clean_org),
+        )
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+
+
+def get_full_history(
+    org_id: str,
+    result_id: int,
+    db_path: Path | str = DB_PATH,
+) -> dict | None:
+    """
+    Retrieves full history for a result including all operator overrides.
+    Returns {"result": <result dict>, "overrides": <list of override dicts, oldest first>}.
+    Returns None immediately if get_result_by_id returns None.
+    """
+    result = get_result_by_id(org_id, result_id, db_path=db_path)
+    if result is None:
+        return None
+
+    overrides = get_overrides_for_result(org_id, result_id, db_path=db_path)
+    return {"result": result, "overrides": overrides}
+

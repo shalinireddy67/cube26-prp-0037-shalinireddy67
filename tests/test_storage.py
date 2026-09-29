@@ -10,8 +10,11 @@ import pytest
 from src.schemas import ComplianceCheck, PrepResult
 from src.storage import (
     _sanitize_id,
+    add_override,
+    get_full_history,
     get_image_bytes,
     get_image_path,
+    get_overrides_for_result,
     get_result_by_id,
     get_results_for_org,
     init_db,
@@ -196,3 +199,123 @@ def test_image_storage_isolation(temp_storage):
     # Path traversal in save_image org_id must be rejected
     with pytest.raises(ValueError):
         save_image("../../", "UNIT-01", b"data", images_root=images_dir)
+
+
+def test_override_a_save_and_add_override(temp_storage):
+    db_file, _ = temp_storage
+    dummy_result = PrepResult(
+        unit_id="UNIT-UNCERTAIN-01",
+        checks=[],
+        overall_status="UNCERTAIN",
+        requires_manual_review=True,
+    )
+    result_id = save_result(
+        org_id="org_demo_alpha",
+        unit_id="UNIT-UNCERTAIN-01",
+        image_path="data/images/org_demo_alpha/uncertain.jpg",
+        result=dummy_result,
+        db_path=db_file,
+    )
+    override_id = add_override(
+        org_id="org_demo_alpha",
+        result_id=result_id,
+        original_verdict="UNCERTAIN",
+        new_verdict="PASS",
+        reason="Operator visually confirmed seal in person",
+        operator_id="op_001",
+        db_path=db_file,
+    )
+    assert isinstance(override_id, int)
+    assert override_id > 0
+    print("\na) PASS: Save result and add override succeeded, returned int id.")
+
+
+def test_override_b_get_full_history(temp_storage):
+    db_file, _ = temp_storage
+    dummy_result = PrepResult(
+        unit_id="UNIT-UNCERTAIN-01",
+        checks=[],
+        overall_status="UNCERTAIN",
+        requires_manual_review=True,
+    )
+    result_id = save_result(
+        org_id="org_demo_alpha",
+        unit_id="UNIT-UNCERTAIN-01",
+        image_path="data/images/org_demo_alpha/uncertain.jpg",
+        result=dummy_result,
+        db_path=db_file,
+    )
+    add_override(
+        org_id="org_demo_alpha",
+        result_id=result_id,
+        original_verdict="UNCERTAIN",
+        new_verdict="PASS",
+        reason="Operator visually confirmed seal in person",
+        operator_id="op_001",
+        db_path=db_file,
+    )
+    history = get_full_history("org_demo_alpha", result_id, db_path=db_file)
+    assert history is not None
+    assert history["result"]["overall_status"] == "UNCERTAIN"
+    assert len(history["overrides"]) == 1
+    assert history["overrides"][0]["new_verdict"] == "PASS"
+    assert history["overrides"][0]["reason"] == "Operator visually confirmed seal in person"
+    print("\nb) PASS: get_full_history retained original verdict and contained 1 override entry with correct fields.")
+
+
+def test_override_c_cross_tenant_override_raises_valueerror(temp_storage):
+    db_file, _ = temp_storage
+    dummy_result = PrepResult(
+        unit_id="UNIT-UNCERTAIN-01",
+        checks=[],
+        overall_status="UNCERTAIN",
+        requires_manual_review=True,
+    )
+    alpha_result_id = save_result(
+        org_id="org_demo_alpha",
+        unit_id="UNIT-UNCERTAIN-01",
+        image_path="data/images/org_demo_alpha/uncertain.jpg",
+        result=dummy_result,
+        db_path=db_file,
+    )
+    with pytest.raises(ValueError, match="Result not found for this organization"):
+        add_override(
+            org_id="org_demo_bravo",
+            result_id=alpha_result_id,
+            original_verdict="UNCERTAIN",
+            new_verdict="PASS",
+            reason="Operator visually confirmed seal in person",
+            operator_id="op_001",
+            db_path=db_file,
+        )
+    print("\nc) PASS: add_override with mismatched org_id raised ValueError.")
+
+
+def test_override_d_cross_tenant_get_overrides_returns_empty(temp_storage):
+    db_file, _ = temp_storage
+    dummy_result = PrepResult(
+        unit_id="UNIT-UNCERTAIN-01",
+        checks=[],
+        overall_status="UNCERTAIN",
+        requires_manual_review=True,
+    )
+    alpha_result_id = save_result(
+        org_id="org_demo_alpha",
+        unit_id="UNIT-UNCERTAIN-01",
+        image_path="data/images/org_demo_alpha/uncertain.jpg",
+        result=dummy_result,
+        db_path=db_file,
+    )
+    add_override(
+        org_id="org_demo_alpha",
+        result_id=alpha_result_id,
+        original_verdict="UNCERTAIN",
+        new_verdict="PASS",
+        reason="Operator visually confirmed seal in person",
+        operator_id="op_001",
+        db_path=db_file,
+    )
+    bravo_overrides = get_overrides_for_result("org_demo_bravo", alpha_result_id, db_path=db_file)
+    assert bravo_overrides == []
+    print("\nd) PASS: get_overrides_for_result for wrong org returned empty list.")
+
