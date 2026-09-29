@@ -15,6 +15,9 @@ if str(PROJECT_ROOT) not in sys.path:
 load_dotenv()
 
 from src.app import process_unit
+from src.storage import init_db, save_result, save_image, get_results_for_org
+
+init_db()
 
 st.set_page_config(page_title="Prep Manager \u2014 Visual Compliance Check", layout="centered")
 
@@ -30,6 +33,7 @@ if vision_provider == "mock":
 # 3. Work Order Input Section (Sidebar or Expander)
 with st.sidebar:
     st.header("Work Order Settings")
+    org_id = st.text_input("Organization ID", value="org_demo_alpha")
     polybag_required = st.checkbox("Polybag required?", value=True)
     suffocation_required = st.checkbox("Suffocation warning required?", value=True)
     expiry_required = st.checkbox("Expiry date required?", value=False)
@@ -66,6 +70,12 @@ if st.button("Analyze"):
 
     try:
         result = process_unit(image_path=temp_path, unit_id=unit_id, work_order=work_order)
+        try:
+            image_bytes = Path(temp_path).read_bytes()
+            saved_image_path = save_image(org_id, unit_id, image_bytes, suffix)
+            save_result(org_id, unit_id, saved_image_path, result)
+        except Exception as e:
+            st.warning(f"Result computed successfully but could not be saved to history: {e}")
     except Exception as e:
         st.error(f"Analysis failed: {e}")
         st.stop()
@@ -122,3 +132,23 @@ if st.button("Analyze"):
                         st.write(f"**Evidence:** {check.evidence}")
                 else:
                     st.write("**Evidence:** None recorded")
+
+with st.expander("Recent checks for this organization"):
+    try:
+        history_rows = get_results_for_org(org_id) if org_id and org_id.strip() else []
+    except Exception:
+        history_rows = []
+
+    if history_rows:
+        display_data = [
+            {
+                "unit_id": r["unit_id"],
+                "overall_status": r["overall_status"],
+                "requires_manual_review": bool(r["requires_manual_review"]),
+                "created_at": r["created_at"],
+            }
+            for r in history_rows
+        ]
+        st.dataframe(display_data, use_container_width=True)
+    else:
+        st.caption("No saved checks yet for this organization.")
