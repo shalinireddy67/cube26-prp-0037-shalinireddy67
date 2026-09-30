@@ -1,0 +1,6 @@
+image_filename,wo_polybag,wo_suffocation_warning,wo_expiry_date,wo_handling_marks,expected_polybag_present_sealed,expected_suffocation_warning,expected_fnsku_label_placement,expected_original_barcode_covered,expected_expiry_date,expected_handling_marks,notes
+a.jpg,False,False,False,False,missing,missing,flat,no,uncertain,uncertain,"Cardboard box with flat barcode labels; no polybag; expiry date and handling marks not visible."
+b.jpg,False,False,False,False,missing,missing,missing,uncertain,uncertain,uncertain,"Stack of cardboard boxes with USPS document pouch; no polybag; no FNSKU label visible."
+c.jpg,True,True,False,False,yes,missing,missing,uncertain,uncertain,uncertain,"Sealed metallic pouch testing polybag and suffocation warning requirements; no warning or label visible."
+d.jpg,False,False,False,True,missing,missing,missing,uncertain,uncertain,all_present,"Cardboard box testing handling marks requirement; This Way Up symbol visible on panel; no polybag."
+e.jpg,False,False,False,False,missing,missing,on_seam,no,uncertain,uncertain,"Shipping box with label placed across top seam and uncovered side barcode; no polybag."

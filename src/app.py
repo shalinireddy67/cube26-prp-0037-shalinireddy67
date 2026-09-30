@@ -30,7 +30,7 @@ def process_unit(image_path: str, unit_id: str, work_order: dict) -> PrepResult:
 
 
 if __name__ == "__main__":
-    demo_image = "fixtures/prep/test.jpg"
+    demo_image = "fixtures/prep/a.jpg"
     demo_unit = "DEMO-UNIT-001"
     demo_wo = {
         "wo_polybag": "True",

@@ -19,7 +19,7 @@ from src.schemas import VALID_VERDICTS
 
 
 def main():
-    image_path = "fixtures/prep/test.jpg"
+    image_path = "fixtures/prep/a.jpg"
     unit_id = "DEMO-UNIT-001"
     work_order = {
         "wo_polybag": "True",

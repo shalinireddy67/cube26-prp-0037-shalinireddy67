@@ -70,7 +70,7 @@ class PrepManagerRequestHandler(SimpleHTTPRequestHandler):
                 "wo_expiry_date": "False",
                 "wo_handling_marks": "fragile",
             })
-            image_path = payload.get("image_path", "fixtures/prep/test.jpg")
+            image_path = payload.get("image_path", "fixtures/prep/a.jpg")
 
             # Handle base64 uploaded image if supplied
             image_base64 = payload.get("image_base64")

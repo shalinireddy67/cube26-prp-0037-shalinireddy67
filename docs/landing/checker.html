@@ -166,9 +166,9 @@
           <div class="form-group">
             <label>Package Photo</label>
             <div class="photo-box">
-              <img id="imgPreview" class="photo-preview" src="../../fixtures/prep/test.jpg" alt="Prep Photo">
+              <img id="imgPreview" class="photo-preview" src="../../fixtures/prep/a.jpg" alt="Prep Photo">
               <div id="photoStatus" style="font-size:.85rem; color:var(--text-soft); margin-top:8px;">
-                Using standard demo fixture: <code>fixtures/prep/test.jpg</code>
+                Using standard demo fixture: <code>fixtures/prep/a.jpg</code>
               </div>
               <div class="photo-actions">
                 <button type="button" class="btn btn-outline" id="btnUseDemo">Use Demo Fixture</button>
@@ -231,7 +231,7 @@
 <script>
 (function(){
   var currentImageBase64 = null;
-  var currentImagePath = "fixtures/prep/test.jpg";
+  var currentImagePath = "fixtures/prep/a.jpg";
   var imgPreview = document.getElementById("imgPreview");
   var photoStatus = document.getElementById("photoStatus");
   var fileInput = document.getElementById("fileInput");
@@ -252,9 +252,9 @@
   // Switch to demo fixture
   btnUseDemo.addEventListener("click", function(){
     currentImageBase64 = null;
-    currentImagePath = "fixtures/prep/test.jpg";
-    imgPreview.src = "../../fixtures/prep/test.jpg";
-    photoStatus.innerHTML = "Using standard demo fixture: <code>fixtures/prep/test.jpg</code>";
+    currentImagePath = "fixtures/prep/a.jpg";
+    imgPreview.src = "../../fixtures/prep/a.jpg";
+    photoStatus.innerHTML = "Using standard demo fixture: <code>fixtures/prep/a.jpg</code>";
     fileInput.value = "";
   });
 

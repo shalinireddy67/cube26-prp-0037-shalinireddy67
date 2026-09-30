@@ -16,7 +16,7 @@ from src.vision_agent import analyze_unit_photo
 
 
 def main():
-    image_path = "fixtures/prep/test.jpg"
+    image_path = "fixtures/prep/a.jpg"
     unit_id = "TEST-001"
 
     print("=== Test 1: Real / Mock analyze_unit_photo Output ===")

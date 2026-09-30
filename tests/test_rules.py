@@ -21,7 +21,7 @@ def main():
     print("=" * 70)
     vision_all_pass = VisionObservationResult(
         unit_id="UNIT-PASS-01",
-        image_path="fixtures/prep/test.jpg",
+        image_path="fixtures/prep/a.jpg",
         status="OK",
         checks={
             "polybag_present_sealed": VisionCheckObservation(
@@ -60,7 +60,7 @@ def main():
     print("=" * 70)
     vision_fail_suffocation = VisionObservationResult(
         unit_id="UNIT-FAIL-02",
-        image_path="fixtures/prep/test.jpg",
+        image_path="fixtures/prep/a.jpg",
         status="OK",
         checks={
             "polybag_present_sealed": VisionCheckObservation(
@@ -99,7 +99,7 @@ def main():
     print("=" * 70)
     vision_not_required = VisionObservationResult(
         unit_id="UNIT-NOTREQ-03",
-        image_path="fixtures/prep/test.jpg",
+        image_path="fixtures/prep/a.jpg",
         status="OK",
         checks={
             "polybag_present_sealed": VisionCheckObservation(
@@ -138,7 +138,7 @@ def main():
     print("=" * 70)
     vision_pending = VisionObservationResult(
         unit_id="UNIT-PENDING-04",
-        image_path="fixtures/prep/test.jpg",
+        image_path="fixtures/prep/a.jpg",
         status="PENDING",
         checks={},
         reason="Model API timeout after 30s",
@@ -151,7 +151,7 @@ def main():
     print("=" * 70)
     vision_all_6 = VisionObservationResult(
         unit_id="UNIT-SIXCHECKS-05",
-        image_path="fixtures/prep/test.jpg",
+        image_path="fixtures/prep/a.jpg",
         status="OK",
         checks={
             "polybag_present_sealed": VisionCheckObservation(
