@@ -191,7 +191,7 @@ def _call_groq(image_bytes: bytes, media_type: str, prompt: str, model: str | No
             "Please fill in GROQ_API_KEY in your .env file."
         )
 
-    selected_model = model or os.environ.get("GROQ_VISION_MODEL", "qwen/qwen3.6-27b")
+    selected_model = model or os.environ.get("GROQ_VISION_MODEL", "qwen/qwen3.8-27b")
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
     client = Groq(api_key=api_key)
@@ -371,5 +371,5 @@ def analyze_unit_photo(image_path: str, model: str | None = None) -> dict[str, A
 
 
 if __name__ == "__main__":
-    result = analyze_unit_photo("fixtures/prep/test.jpg")
+    result = analyze_unit_photo("fixtures/prep/a.jpg")
     print(json.dumps(result, indent=2))

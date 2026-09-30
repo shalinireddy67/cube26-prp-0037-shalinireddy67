@@ -31,17 +31,18 @@ def main():
     print("=" * 70)
     print("TEST 1: Standard pipeline run with configured provider (mock)")
     print("=" * 70)
-    result = process_unit(image_path=image_path, unit_id=unit_id, work_order=work_order)
+    with patch.dict(os.environ, {"VISION_PROVIDER": "mock"}):
+        result = process_unit(image_path=image_path, unit_id=unit_id, work_order=work_order)
 
-    # Assertions
-    assert result.overall_status in VALID_VERDICTS, f"Invalid overall_status: {result.overall_status}"
-    assert isinstance(result.requires_manual_review, bool), "requires_manual_review must be bool"
-    assert result.unit_id == unit_id, "unit_id mismatch"
-    assert len(result.checks) == 6, f"Expected 6 checks, got {len(result.checks)}"
+        # Assertions
+        assert result.overall_status in VALID_VERDICTS, f"Invalid overall_status: {result.overall_status}"
+        assert isinstance(result.requires_manual_review, bool), "requires_manual_review must be bool"
+        assert result.unit_id == unit_id, "unit_id mismatch"
+        assert len(result.checks) == 6, f"Expected 6 checks, got {len(result.checks)}"
 
-    print(f"overall_status: {result.overall_status}")
-    print(f"requires_manual_review: {result.requires_manual_review}")
-    pprint(asdict(result))
+        print(f"overall_status: {result.overall_status}")
+        print(f"requires_manual_review: {result.requires_manual_review}")
+        pprint(asdict(result))
 
     print("\n" + "=" * 70)
     print("TEST 2: Pipeline run with invalid VISION_PROVIDER (fail-open PENDING flow)")

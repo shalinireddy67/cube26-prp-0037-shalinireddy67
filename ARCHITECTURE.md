@@ -46,7 +46,7 @@ The vision layer lives in [`src/vision_agent.py`](file:///c:/Users/reddy/cube26-
 The active vision provider is configured dynamically through the `VISION_PROVIDER` environment variable (defaults to `gemini` if unset; currently configured to `groq` in `.env`).
 
 The codebase implements four distinct provider paths:
-* **Groq** (`_call_groq`): Calls Groq's Chat Completions API with vision-capable models (e.g., `qwen/qwen3.6-27b`, configurable via `GROQ_VISION_MODEL`). Requires `GROQ_API_KEY`.
+* **Groq** (`_call_groq`): Calls Groq's Chat Completions API with vision-capable models (e.g., `qwen/qwen3.8-27b`, configurable via `GROQ_VISION_MODEL`). Requires `GROQ_API_KEY`.
 * **Gemini** (`_call_gemini`): Calls Google's GenAI API (defaults to `gemini-2.5-flash`, configurable via `GEMINI_VISION_MODEL`). Requires `GEMINI_API_KEY`.
 * **Anthropic** (`_call_anthropic`): Calls Anthropic's Messages API (defaults to `claude-haiku-4-5-20251001`, configurable via `VISION_MODEL`). Requires `ANTHROPIC_API_KEY`.
 * **Mock** (`_call_mock`): Returns hard-coded synthetic JSON observations for offline local testing and development without requiring network calls or API credentials.

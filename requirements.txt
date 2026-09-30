@@ -1,4 +1,6 @@
 python-dotenv
 google-genai
-pytest
+anthropic
 groq
+streamlit
+pytest

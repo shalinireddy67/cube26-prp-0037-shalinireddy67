@@ -319,3 +319,125 @@ def test_override_d_cross_tenant_get_overrides_returns_empty(temp_storage):
     assert bravo_overrides == []
     print("\nd) PASS: get_overrides_for_result for wrong org returned empty list.")
 
+
+def test_tenant_isolation_comprehensive_guarantees(temp_storage):
+    """
+    Demonstrates actual multi-tenant isolation guarantees provided by the current
+    parameterized SQLite and path-sanitizing storage implementation:
+    1. org_demo_alpha can retrieve its own rows.
+    2. org_demo_bravo cannot retrieve alpha rows.
+    3. org_demo_bravo cannot retrieve an alpha result by ID.
+    4. org_demo_bravo cannot retrieve alpha image bytes by guessing the filename/path.
+    5. Path traversal attempts are rejected.
+    """
+    db_file, images_dir = temp_storage
+
+    # Setup Alpha result and image
+    alpha_result = PrepResult(
+        unit_id="ALPHA-UNIT-100",
+        checks=[],
+        overall_status="PASS",
+        requires_manual_review=False,
+    )
+    alpha_img_bytes = b"ALPHA_IMAGE_CONTENT"
+    saved_img = save_image(
+        org_id="org_demo_alpha",
+        unit_id="ALPHA-UNIT-100",
+        image_bytes=alpha_img_bytes,
+        filename="alpha_capture.jpg",
+        images_root=images_dir,
+    )
+    alpha_id = save_result(
+        org_id="org_demo_alpha",
+        unit_id="ALPHA-UNIT-100",
+        image_path=saved_img,
+        result=alpha_result,
+        db_path=db_file,
+    )
+
+    # 1. org_demo_alpha can retrieve its own rows
+    alpha_rows = get_results_for_org("org_demo_alpha", db_path=db_file)
+    assert len(alpha_rows) == 1
+    assert alpha_rows[0]["id"] == alpha_id
+    assert alpha_rows[0]["unit_id"] == "ALPHA-UNIT-100"
+
+    alpha_read_bytes = get_image_bytes("org_demo_alpha", "alpha_capture.jpg", images_root=images_dir)
+    assert alpha_read_bytes == alpha_img_bytes
+
+    # 2. org_demo_bravo cannot retrieve alpha rows
+    bravo_rows = get_results_for_org("org_demo_bravo", db_path=db_file)
+    assert bravo_rows == []
+
+    # 3. org_demo_bravo cannot retrieve an alpha result by ID
+    bravo_result_by_id = get_result_by_id("org_demo_bravo", alpha_id, db_path=db_file)
+    assert bravo_result_by_id is None
+
+    # 4. org_demo_bravo cannot retrieve alpha image bytes by guessing filename/path
+    bravo_img_guess = get_image_bytes("org_demo_bravo", "alpha_capture.jpg", images_root=images_dir)
+    assert bravo_img_guess is None
+
+    # 5. Path traversal attempts are rejected
+    traversal_img = get_image_bytes("org_demo_bravo", "../org_demo_alpha/alpha_capture.jpg", images_root=images_dir)
+    assert traversal_img is None
+
+    traversal_path = get_image_path("org_demo_bravo", "../../etc/passwd", images_root=images_dir)
+    assert traversal_path is None
+
+    with pytest.raises(ValueError):
+        save_image("../../", "UNIT-01", b"data", images_root=images_dir)
+
+
+def test_server_api_check_tenant_and_path_security(monkeypatch):
+    """
+    Issue 1 & Issue 2 Security Verification:
+    1. Client-supplied org_id ("org_demo_bravo") is ignored; result is stored under TENANT_ORG_ID.
+    2. Malicious client-supplied image_path ("../.env", "data/prep_manager.db") cannot cause
+       arbitrary file access; server strictly evaluates fixed demo fixture for non-upload requests.
+    """
+    import http.client
+    import threading
+    import uuid
+    from http.server import ThreadingHTTPServer
+    from server import PrepManagerRequestHandler
+
+    monkeypatch.setenv("TENANT_ORG_ID", "org_demo_alpha")
+    monkeypatch.setenv("VISION_PROVIDER", "mock")
+
+    unique_unit_id = f"TEST-TENANT-SPOOF-{uuid.uuid4().hex[:8]}"
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), PrepManagerRequestHandler)
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port)
+
+        # Send request with spoofed org_id and malicious traversal image_path
+        payload = {
+            "unit_id": unique_unit_id,
+            "org_id": "org_demo_bravo",
+            "image_path": "../.env",
+        }
+        body = json.dumps(payload).encode("utf-8")
+        conn.request("POST", "/api/check", body=body, headers={"Content-Type": "application/json"})
+        resp = conn.getresponse()
+        assert resp.status == 200
+        data = json.loads(resp.read().decode("utf-8"))
+
+        assert data["unit_id"] == unique_unit_id
+
+        # Verify: Result was NOT stored under org_demo_bravo
+        bravo_records = get_results_for_org("org_demo_bravo")
+        assert not any(r["unit_id"] == unique_unit_id for r in bravo_records)
+
+        # Verify: Result WAS stored under configured server-side tenant (org_demo_alpha)
+        alpha_records = get_results_for_org("org_demo_alpha")
+        stored_alpha = [r for r in alpha_records if r["unit_id"] == unique_unit_id]
+        assert len(stored_alpha) == 1
+
+        # Verify: Stored image path is the fixed demo fixture, NOT ../.env
+        assert stored_alpha[0]["image_path"] == "fixtures/prep/a.jpg"
+    finally:
+        server.shutdown()
+        server.server_close()
