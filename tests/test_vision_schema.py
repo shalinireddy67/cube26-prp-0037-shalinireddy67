@@ -2,9 +2,11 @@
 Manual test script for VisionObservationResult schema and parser.
 """
 
+import os
 import sys
 from pathlib import Path
 from pprint import pprint
+from unittest.mock import patch
 
 # Ensure project root is on sys.path for direct script execution
 project_root = Path(__file__).resolve().parent.parent
@@ -20,7 +22,8 @@ def main():
     unit_id = "TEST-001"
 
     print("=== Test 1: Real / Mock analyze_unit_photo Output ===")
-    raw_result = analyze_unit_photo(image_path)
+    with patch.dict(os.environ, {"VISION_PROVIDER": "mock"}):
+        raw_result = analyze_unit_photo(image_path)
     parsed_result = parse_vision_result(raw_result, unit_id=unit_id, image_path=image_path)
     pprint(parsed_result)
 
